@@ -502,13 +502,13 @@ int ParseRequest( int client_sock, struct sockaddr_in client_addr, char *req, st
 	strcpy(protocal, strtolower(method_buf[2]));
 	strcpy(query, (query_total == 2 ? query_buf[1] : ""));
 
-	memcpy((st_req)->method, method_buf[0], strlen(method_buf[0]));
-	memcpy((st_req)->pathinfo, pathinfo, strlen(pathinfo));
-	memcpy((st_req)->query, query, strlen(query));
-	memcpy((st_req)->protocal, cwd, strlen(cwd));
-	memcpy((st_req)->file, file, strlen(file));
-	memcpy((st_req)->realpath, cwd, strlen(cwd));
-	memcpy((*(st_req)->reqdata), *req_data, strlen(*req_data));
+	memcpy((st_req)->method, method_buf[0], sizeof(*method_buf[0]));
+	memcpy((st_req)->pathinfo, pathinfo, sizeof(pathinfo));
+	memcpy((st_req)->query, query, sizeof(query));
+	memcpy((st_req)->protocal, cwd, sizeof(cwd));
+	memcpy((st_req)->file, file, sizeof(file));
+	memcpy((st_req)->realpath, cwd, sizeof(cwd));
+	memcpy(*st_req->reqdata, *req_data, strlen(*req_data));
 
 	/* Is a directory pad default index page */
 	if ( is_dir(cwd) ){
