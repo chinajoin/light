@@ -1,0 +1,4 @@
+*.o
+light
+hash_table/*.o
+htdocs/core*

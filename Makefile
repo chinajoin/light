@@ -31,7 +31,7 @@ doxy :
 	sh update_doc.sh	
 
 clean :
-	rm -rf $(OBJS) light doc/ manual.pdf
+	rm -rf $(OBJS) light
 
 cs :
 	cscope -bRv
