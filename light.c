@@ -380,7 +380,7 @@ int ProcRequest(poll_event_t * poll_event, int client_sock, poll_element_t * ele
 		sprintf(buf, "File %s not found.", elem->st_req->realpath);
 		info("File %s not found.", elem->st_req->realpath);
 		SendError( client_sock, 404, "Not Found", "", buf);
-		poll_event_element_delete(poll_event, elem);
+		/*poll_event_element_delete(poll_event, elem);*/
 		return -1;
 	}
 	if ( access(elem->st_req->realpath, R_OK) != 0 ){
@@ -388,26 +388,26 @@ int ProcRequest(poll_event_t * poll_event, int client_sock, poll_element_t * ele
 		info("File %s is protected.", elem->st_req->realpath);
 		sprintf(buf, "File %s is protected.", elem->st_req->realpath);
 		SendError( client_sock, 403, "Forbidden", "", buf);
-		poll_event_element_delete(poll_event, elem);
+		/*poll_event_element_delete(poll_event, elem);*/
 		return -1;
 	}
 
 	/* Check target is regular file or directory */
 	if ( is_file(elem->st_req->realpath) == 1 ){
 		SendFile( client_sock,  elem->st_req->realpath, elem->st_req->pathinfo );
-		poll_event_element_delete(poll_event, elem);
+		/*poll_event_element_delete(poll_event, elem);*/
 		return 0;
 	} else if ( is_dir(elem->st_req->realpath) == 1 ){ 
 		/* Is a directory choose browse dir list */
 		if ( g_is_browse ){
 			SendDirectory( client_sock, elem->st_req->realpath, elem->st_req->pathinfo );
-			poll_event_element_delete(poll_event, elem);
+			/*poll_event_element_delete(poll_event, elem);*/
 			return 0;
 		} else {
 			memset(buf, 0, sizeof(buf));
 			sprintf(buf, "File %s is protected.", elem->st_req->realpath);
 			SendError( client_sock, 403, "Forbidden", "", buf);
-			poll_event_element_delete(poll_event, elem);
+			/*poll_event_element_delete(poll_event, elem);*/
 			return -1;
 		}
 
@@ -415,7 +415,7 @@ int ProcRequest(poll_event_t * poll_event, int client_sock, poll_element_t * ele
 		memset(buf, 0, sizeof(buf));
 		sprintf(buf, "File %s is protected.", elem->st_req->realpath);
 		SendError( client_sock, 403, "Forbidden", "", buf);		
-		poll_event_element_delete(poll_event, elem);
+		/*poll_event_element_delete(poll_event, elem);*/
 		return -1;
 	}
 
@@ -602,7 +602,7 @@ void write_cb(poll_event_t * poll_event, poll_element_t * elem)
 void close_cb (poll_event_t * poll_event, poll_element_t * elem)
 {
     // close the socket, we are done with it
-    poll_event_element_delete(poll_event, elem);
+    /*poll_event_element_delete(poll_event, elem);*/
 }
 
 void accept_cb(poll_event_t * poll_event)

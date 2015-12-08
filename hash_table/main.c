@@ -9,7 +9,7 @@ int main()
     int val2 = 200;
     int j = 2;
     int x =0;
-    for (x=0;x<3000;x++)
+    for (x=0;x<300;x++)
     {
         // use the macro
         HT_ADD(table, &j, &val);
@@ -34,6 +34,8 @@ int main()
     val2 = -200;
     j--;
     int *value = NULL;
+    value = (int* ) HT_LOOKUP(table, &j);
+    value = (int* ) HT_LOOKUP(table, &j);
     value = (int* ) HT_LOOKUP(table, &j);
     void** keys = NULL;
     size_t num = hash_table_get_keys(table, keys);
