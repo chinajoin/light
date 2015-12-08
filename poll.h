@@ -7,7 +7,7 @@
 #include "light.h"
 
 #define MAX_EVENTS 100
-#define CALLBACK(x) void (*x) (poll_event_t *, poll_element_t *, struct epoll_event)
+#define CALLBACK(x) void (*x) (poll_event_t *, poll_element_t *)
 
 #define EV_READ EPOLLIN
 #define EV_WRITE EPOLLOUT
@@ -56,10 +56,7 @@ struct poll_event
 {
     /** hash table of fds - poll event elements */
     hash_table_t *table;
-    /** timeout call back
-     * when in an event loop it can return any non zero value to stop the eventloop
-     */
-    int (*timeout_callback)(poll_event_t *);
+    
     /** timeout duration */
     size_t timeout;
 	/* socket fd */
@@ -82,6 +79,16 @@ struct poll_event
 poll_element_t * poll_event_element_new(int, uint32_t);
 
 /**
+ * Function to add a file descriptor to the event poll obeject
+ * @note if add is performed on an fd already in poll_event, the flags are updated in the existing object
+ * @param poll_event poll event object which fd has to be added
+ * @param fd the file descriptor to be added
+ * @param flags events flags from epoll
+ * @param poll_element a poll event element pointer which is filled in by the function, set all function callbacks and cb_flags in this
+ */
+int poll_event_element_set(poll_event_t*, int, uint32_t, poll_element_t **);
+
+/**
  * Function to delete a poll event element
  * @param elem poll event element
  */
@@ -100,26 +107,9 @@ poll_event_t * poll_event_new(int);
  * Function to delete poll event object
  * @param poll_event poll event object to be deleted
  */
-void poll_event_delete(poll_event_t*);
-
-/**
- * Function to add a file descriptor to the event poll obeject
- * @note if add is performed on an fd already in poll_event, the flags are updated in the existing object
- * @param poll_event poll event object which fd has to be added
- * @param fd the file descriptor to be added
- * @param flags events flags from epoll
- * @param poll_element a poll event element pointer which is filled in by the function, set all function callbacks and cb_flags in this
- */
-int poll_event_add(poll_event_t*, int, uint32_t, poll_element_t **);
+void poll_event_destory(poll_event_t*);
 
 int poll_event_stop(poll_event_t*, int, uint32_t);
-
-/**
- * Function to remove a poll event element from the given poll_event object
- * @param poll_event poll event object from which fd has to be removed
- * @param fd file descriptor which has to be removed
- */
-int poll_event_remove(poll_event_t*, int);
 
 /**
  * Function which processes the events from epoll_wait and calls the appropriate callbacks

@@ -1,13 +1,7 @@
 CC = gcc -fPIC 
-LDFLAGS = -lm
+LDFLAGS = -lm -g
 
-#ISDEBUG = 1
-# set DEBUG options
-ifdef ISDEBUG
-CFLAGS = -Wall -Wextra -ggdb -pg -DDEBUG
-else
 CFLAGS = -Wall -O0 -g
-endif
 
 #name all the object files
 OBJS = light.o hash_table/hashtable.o poll.o util.o log.o

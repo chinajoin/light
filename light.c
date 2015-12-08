@@ -28,15 +28,14 @@ static char g_log_path[256]			= DEFAULT_LOG_PATH;
 static int g_log_fd					= 0;
 
 // func declare
-int timeout_cb (poll_event_t *);
 
 void accept_cb(poll_event_t *);
 
-void read_cb (poll_event_t *, poll_element_t *, struct epoll_event );
+void read_cb (poll_event_t *, poll_element_t *);
 
-void write_cb(poll_event_t *, poll_element_t *, struct epoll_event );
+void write_cb(poll_event_t *, poll_element_t *);
 
-void close_cb (poll_event_t *, poll_element_t *, struct epoll_event );
+void close_cb (poll_event_t *, poll_element_t *);
 
 /********************************
  *
@@ -371,7 +370,7 @@ int SendDirectory( int client_sock, char *path, char *pathinfo )
  * Process request
  *
  */
-int ProcRequest(poll_event_t * poll_event, int client_sock, poll_element_t * elem, struct epoll_event ev)
+int ProcRequest(poll_event_t * poll_event, int client_sock, poll_element_t * elem)
 {
 	char buf[128];
 
@@ -502,12 +501,12 @@ int ParseRequest( int client_sock, struct sockaddr_in client_addr, char *req, st
 	strcpy(protocal, strtolower(method_buf[2]));
 	strcpy(query, (query_total == 2 ? query_buf[1] : ""));
 
-	memcpy((st_req)->method, method_buf[0], sizeof(*method_buf[0]));
-	memcpy((st_req)->pathinfo, pathinfo, sizeof(pathinfo));
-	memcpy((st_req)->query, query, sizeof(query));
-	memcpy((st_req)->protocal, cwd, sizeof(cwd));
-	memcpy((st_req)->file, file, sizeof(file));
-	memcpy((st_req)->realpath, cwd, sizeof(cwd));
+	memcpy(st_req->method, method_buf[0], sizeof(*method_buf[0]));
+	memcpy(st_req->pathinfo, pathinfo, sizeof(pathinfo));
+	memcpy(st_req->query, query, sizeof(query));
+	memcpy(st_req->protocal, cwd, sizeof(cwd));
+	memcpy(st_req->file, file, sizeof(file));
+	memcpy(st_req->realpath, cwd, sizeof(cwd));
 	memcpy(*st_req->reqdata, *req_data, strlen(*req_data));
 
 	/* Is a directory pad default index page */
@@ -538,12 +537,12 @@ int ParseRequest( int client_sock, struct sockaddr_in client_addr, char *req, st
 }
 
 
-void read_cb (poll_event_t * poll_event, poll_element_t * elem, struct epoll_event ev)
+void read_cb (poll_event_t * poll_event, poll_element_t * elem)
 {
     // NOTE -> read is also invoked on accept and connect
     // we just read data and print
 	char *buf = elem->buf;
-	info("start read, fd=%d", elem->fd);
+	info("[===002===]start read, fd=%d", elem->fd);
 	int len = 0;
 	int read_complete = 0;
 	// 0: end; -1: error
@@ -588,21 +587,22 @@ void read_cb (poll_event_t * poll_event, poll_element_t * elem, struct epoll_eve
 		ParseRequest( elem->fd, elem->addr, buf, elem->st_req);
 		info("parse done, realpath:%s", elem->st_req->realpath);
 		// register write callback
-		unsigned flags = EPOLLOUT;
-		poll_event_add(poll_event, elem->fd, flags, &elem);
+		/*unsigned flags = EPOLLOUT;*/
+		/*poll_event_element_set(poll_event, elem->fd, flags, &elem);*/
 	}
 }
 
-void write_cb(poll_event_t * poll_event, poll_element_t * elem, struct epoll_event ev)
+void write_cb(poll_event_t * poll_event, poll_element_t * elem)
 {
-	ProcRequest(poll_event, elem->fd, elem, ev);
+	info("[===003===]start write, fd=%d", elem->fd);
+	ProcRequest(poll_event, elem->fd, elem);
 }
 
 
-void close_cb (poll_event_t * poll_event, poll_element_t * elem, struct epoll_event ev)
+void close_cb (poll_event_t * poll_event, poll_element_t * elem)
 {
     // close the socket, we are done with it
-    poll_event_remove(poll_event, elem->fd);
+    poll_event_element_delete(poll_event, elem);
 }
 
 void accept_cb(poll_event_t * poll_event)
@@ -611,22 +611,16 @@ void accept_cb(poll_event_t * poll_event)
     int conn_fd = accept(poll_event->listen_sock, (struct sockaddr*)NULL, NULL);
     fcntl(conn_fd, F_SETFL, O_NONBLOCK);
 
-    info("got the connect socket %d", conn_fd);
+    info("[===001===]start accept, fd=%d", conn_fd);
     // set flags to check 
     uint32_t flags = EPOLLIN;
     poll_element_t *p;
     // add file descriptor to poll event
-    poll_event_add(poll_event, conn_fd, flags, &p);
+    poll_event_element_set(poll_event, conn_fd, flags, &p);
     // set function callbacks 
     p->read_callback = read_cb;
     p->write_callback = write_cb;
     p->close_callback = close_cb;
-}
-
-//time out function 
-int timeout_cb (poll_event_t *poll_event)
-{
-    return 0;
 }
 
 
@@ -684,20 +678,17 @@ void InitServerListen( unsigned int port, unsigned int max_client )
 	struct poll_event_t
 	{
 		hash_table_t *table;
-		int (*timeout_callback)(poll_event_t *);
 		size_t timeout;
 		int epoll_fd;
 	}; */
 
     poll_event_t *pe = poll_event_new(-1);
-    // set timeout callback
-    pe->timeout_callback = timeout_cb;
 	pe->listen_sock = listensock;
     pe->accept_callback = accept_cb;
 
 	poll_element_t *p;
     // add sock to poll event
-    poll_event_add(pe, listensock, EPOLLIN, &p);
+    poll_event_element_set(pe, listensock, EPOLLIN, &p);
     // start the event loop
     use_the_force(pe);
 

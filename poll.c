@@ -47,6 +47,50 @@ poll_element_t * poll_event_element_new(int fd, uint32_t events)
     return elem;
 }
 
+
+/**
+ * Function to add a file descriptor to the event poll obeject
+ * @note if add is performed on an fd already in poll_event, the flags are updated in the existing object
+ * @param poll_event poll event object which fd has to be added
+ * @param fd the file descriptor to be added
+ * @param flags events flags from epoll
+ * @param poll_element a poll event element pointer which is filled in by the function, set all function callbacks and cb_flags in this
+ */
+int poll_event_element_set(poll_event_t* poll_event, int fd, uint32_t flags, poll_element_t **poll_element)
+{
+    info("add poll event, event= %d, start lookup", fd);
+    poll_element_t *elem = NULL;
+    elem = (poll_element_t *) HT_LOOKUP(poll_event->table, &fd);
+    if (elem)
+    {
+        info("poll event add, fd (%d) already added updating flags", fd);
+        elem->events |= flags;
+        struct epoll_event ev;
+        memset(&ev, 0, sizeof(struct epoll_event));
+        ev.data.fd = fd;
+        ev.events = elem->events;
+        *poll_element = elem;
+        return epoll_ctl(poll_event->epoll_fd, EPOLL_CTL_MOD, fd, &ev);
+    }
+    else
+    {
+        elem = poll_event_element_new(fd, flags);
+        info("poll event add, elem= %p", elem);
+        if (HT_ADD(poll_event->table, &fd, elem))
+        {
+            // error in hash table
+            return -1;
+        }
+        info("poll event add, fd(%d)", fd);
+        struct epoll_event ev;
+        memset(&ev, 0, sizeof(struct epoll_event));
+        ev.data.fd = fd;
+        ev.events = elem->events;
+        *poll_element = elem;
+        return epoll_ctl(poll_event->epoll_fd, EPOLL_CTL_ADD, fd, &ev);
+    }
+}
+
 /**
  * Function to delete a poll event element
  * @param elem poll event element
@@ -89,59 +133,17 @@ poll_event_t * poll_event_new(int timeout)
     return poll_event;
 }
 
+
 /**
  * Function to delete poll event object
  * @param poll_event poll event object to be deleted
  */
-void poll_event_delete(poll_event_t* poll_event)
+void poll_event_destory(poll_event_t* poll_event)
 {
     info("deleting a poll_event");
     hash_table_delete(poll_event->table);
     close(poll_event->epoll_fd);
     free(poll_event);
-}
-
-/**
- * Function to add a file descriptor to the event poll obeject
- * @note if add is performed on an fd already in poll_event, the flags are updated in the existing object
- * @param poll_event poll event object which fd has to be added
- * @param fd the file descriptor to be added
- * @param flags events flags from epoll
- * @param poll_element a poll event element pointer which is filled in by the function, set all function callbacks and cb_flags in this
- */
-int poll_event_add(poll_event_t* poll_event, int fd, uint32_t flags, poll_element_t **poll_element)
-{
-    info("add poll event, event= %d, start lookup", fd);
-    poll_element_t *elem = NULL;
-    elem = (poll_element_t *) HT_LOOKUP(poll_event->table, &fd);
-    if (elem)
-    {
-        info("poll event add, fd (%d) already added updating flags", fd);
-        elem->events |= flags;
-        struct epoll_event ev;
-        memset(&ev, 0, sizeof(struct epoll_event));
-        ev.data.fd = fd;
-        ev.events = elem->events;
-        *poll_element = elem;
-        return epoll_ctl(poll_event->epoll_fd, EPOLL_CTL_MOD, fd, &ev);
-    }
-    else
-    {
-        elem = poll_event_element_new(fd, flags);
-        info("poll event add, elem= %p", elem);
-        if (HT_ADD(poll_event->table, &fd, elem))
-        {
-            // error in hash table
-            return -1;
-        }
-        info("poll event add, fd(%d)", fd);
-        struct epoll_event ev;
-        memset(&ev, 0, sizeof(struct epoll_event));
-        ev.data.fd = fd;
-        ev.events = elem->events;
-        *poll_element = elem;
-        return epoll_ctl(poll_event->epoll_fd, EPOLL_CTL_ADD, fd, &ev);
-    }
 }
 
 int poll_event_stop(poll_event_t* poll_event, int fd, uint32_t flags)
@@ -175,20 +177,6 @@ int poll_event_stop(poll_event_t* poll_event, int fd, uint32_t flags)
 }
 
 /**
- * Function to remove a poll event element from the given poll_event object
- * @param poll_event poll event object from which fd has to be removed
- * @param fd file descriptor which has to be removed
- */
-int poll_event_remove(poll_event_t* poll_event, int fd)
-{
-    // TODO Handle error
-    HT_REMOVE(poll_event->table, &fd);
-    epoll_ctl(poll_event->epoll_fd, EPOLL_CTL_DEL, fd, NULL);
-    close(fd);
-    return 0;
-}
-
-/**
  * Function which processes the events from epoll_wait and calls the appropriate callbacks
  * @note only process events once if you need to use an event loop use poll_event_loop
  * @param poll_event poll event object to be processed
@@ -198,16 +186,10 @@ int poll_event_process(poll_event_t * poll_event)
     struct epoll_event events[MAX_EVENTS];
     info("=======> process request start, on listensock(%d)...", poll_event->listen_sock);
     int fds = epoll_wait(poll_event->epoll_fd, events, MAX_EVENTS, poll_event->timeout);
-    if (fds == 0)
+    if (fds == -1)
     {
-        info("event loop timed out");
-        if (poll_event->timeout_callback)
-        {
-            if (poll_event->timeout_callback(poll_event))
-            {
-                return 0;
-            }
-        }
+        info("event loop pwait");
+        exit(EXIT_FAILURE);
     }
     info("event count: %d", fds);
 	int i;
@@ -225,18 +207,24 @@ int poll_event_process(poll_event_t * poll_event)
 			else
 			{
 				// process request
-				info("process RW for event id(%d), sock(%d) and event(%d)", i, events[i].data.fd, events[i].events);
 				// read
 				if((events[i].events & EPOLLIN) && poll_element->read_callback)
 				{
+                    info("process READ for event id(%d), sock(%d) and event(%d)", i, events[i].data.fd, events[i].events);
 					info("===> found EPOLLIN for event id(%d) and sock(%d)", i, events[i].data.fd);
-					poll_element->read_callback(poll_event, poll_element, events[i]);
+					poll_element->read_callback(poll_event, poll_element);
+
+                    struct epoll_event ev;
+                    ev.data.fd = events[i].data.fd;
+                    ev.events = EPOLLOUT;
+                    epoll_ctl(poll_event->epoll_fd, EPOLL_CTL_MOD, events[i].data.fd, &ev);
 				}
 				// write
 				if((events[i].events & EPOLLOUT) && poll_element->write_callback)
 				{
+                    info("process WRITE for event id(%d), sock(%d) and event(%d)", i, events[i].data.fd, events[i].events);
 					info("===> found EPOLLOUT for event id(%d) and sock(%d)", i, events[i].data.fd);
-					poll_element->write_callback(poll_event, poll_element, events[i]);
+					poll_element->write_callback(poll_event, poll_element);
 				}
 				// shutdown or error
 				if((events[i].events & EPOLLRDHUP) || (events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP))
@@ -252,7 +240,7 @@ int poll_event_process(poll_event_t * poll_event)
 					}
 					if(poll_element->close_callback)
 					{
-						poll_element->close_callback(poll_event, poll_element, events[1]);
+						poll_element->close_callback(poll_event, poll_element);
 					}
 				}
 			}
