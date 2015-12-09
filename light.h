@@ -59,13 +59,13 @@
 
 /* data struct define */
 struct st_request {
-	char *method;
-	char *pathinfo;
-	char *query;
-	char **reqdata;
-	char *protocal;
-	char *file;
-	char *realpath;
+	char method[16];
+	char pathinfo[256];
+	char query[256];
+	char protocal[16];
+	char file[64];
+	char realpath[512];
+	//char **reqdata;
 };
 
 #endif

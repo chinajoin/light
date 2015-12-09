@@ -9,7 +9,7 @@ int main()
     int val2 = 200;
     int j = 2;
     int x =0;
-    for (x=0;x<300;x++)
+    for (x=0;x<3;x++)
     {
         // use the macro
         HT_ADD(table, &j, &val);

@@ -429,10 +429,12 @@ int ProcRequest(poll_event_t * poll_event, int client_sock, poll_element_t * ele
  * Parse client request
  *
  */
-int ParseRequest( int client_sock, struct sockaddr_in client_addr, char *req, struct st_request *st_req)
+int ParseRequest( int client_sock, struct sockaddr_in client_addr, char *req, struct st_request **st_req)
 {
-	char **buf, **method_buf, **query_buf, currtime[32], cwd[1024], pathinfo[512], file[256], log[1024];
+	char **buf, **method_buf, **query_buf, currtime[32]={0}, cwd[1024]={0}, pathinfo[512]={0}, file[256]={0}, log[1024]={0};
 	int line_total, method_total, query_total, i;
+
+    struct st_request *st = (struct st_request *)malloc(sizeof(struct st_request));
 
 	// 存放请求的相关信息：method，path，head，etc
 	/* Split client request */
@@ -501,19 +503,20 @@ int ParseRequest( int client_sock, struct sockaddr_in client_addr, char *req, st
 	strcpy(protocal, strtolower(method_buf[2]));
 	strcpy(query, (query_total == 2 ? query_buf[1] : ""));
 
-	memcpy(st_req->method, method_buf[0], sizeof(*method_buf[0]));
-	memcpy(st_req->pathinfo, pathinfo, sizeof(pathinfo));
-	memcpy(st_req->query, query, sizeof(query));
-	memcpy(st_req->protocal, cwd, sizeof(cwd));
-	memcpy(st_req->file, file, sizeof(file));
-	memcpy(st_req->realpath, cwd, sizeof(cwd));
-	memcpy(*st_req->reqdata, *req_data, strlen(*req_data));
+	memcpy(st->method, method_buf[0], sizeof(*method_buf[0]));
+	memcpy(st->pathinfo, pathinfo, sizeof(pathinfo));
+	memcpy(st->query, query, sizeof(query));
+	memcpy(st->protocal, cwd, sizeof(cwd));
+	memcpy(st->file, file, sizeof(file));
+	memcpy(st->realpath, cwd, sizeof(cwd));
+	/*memcpy(*st_req->reqdata, *req_data, strlen(*req_data));*/
+    *st_req = st;
 
 	/* Is a directory pad default index page */
 	if ( is_dir(cwd) ){
 		strcat(cwd, g_dir_index);
 		if ( file_exists(cwd) ){
-			memcpy((st_req)->realpath, cwd, strlen(cwd));
+			memcpy(st->realpath, cwd, strlen(cwd));
 		}
 	}
 	
@@ -584,7 +587,7 @@ void read_cb (poll_event_t * poll_event, poll_element_t * elem)
 	{
 		//handle request
 		info("read done, next");
-		ParseRequest( elem->fd, elem->addr, buf, elem->st_req);
+		ParseRequest( elem->fd, elem->addr, buf, &(elem->st_req));
 		info("parse done, realpath:%s", elem->st_req->realpath);
 		// register write callback
 		/*unsigned flags = EPOLLOUT;*/

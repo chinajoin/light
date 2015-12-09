@@ -464,7 +464,9 @@ int hash_table_resize(hash_table_t *table, size_t len)
     hash_table_element_t ** elements;
     size_t count;
     // FIXME traversing the elements twice, change it some time soon
+    INFO("resizing hash table 00-");
     count = hash_table_get_elements(table, &elements);
+    INFO("resizing hash table 000");
     if (!count) 
     {
         INFO("Got No Elements from the hash table");
@@ -472,7 +474,9 @@ int hash_table_resize(hash_table_t *table, size_t len)
     }
     // keep the current store house in case we dont get more memory
     hash_table_element_t ** temp = table->store_house;
+    INFO("resizing hash table 001");
     table->store_house = calloc(len, sizeof(hash_table_element_t *));
+    INFO("resizing hash table 002");
     if (!table->store_house)
     {
         table->store_house = temp;

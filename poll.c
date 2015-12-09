@@ -29,16 +29,6 @@ poll_element_t * poll_event_element_new(int fd, uint32_t events)
 
     poll_element_t *elem = calloc(1, poll_event_element_s);
 
-	elem->st_req = (struct st_request *)malloc(sizeof(struct st_request));
-
-	elem->st_req->method = (char *)malloc(16);
-	elem->st_req->pathinfo = (char *)malloc(256);
-	elem->st_req->query = (char *)malloc(256);
-	elem->st_req->reqdata = (char **)malloc(1024);
-	elem->st_req->protocal = (char *)malloc(16);
-	elem->st_req->file = (char *)malloc(64);
-	elem->st_req->realpath = (char *)malloc(512);
-
     if (elem)
     {
         elem->fd = fd;
@@ -102,6 +92,7 @@ void poll_event_element_delete(poll_event_t* poll_event, poll_element_t * elem)
     epoll_ctl(poll_event->epoll_fd, EPOLL_CTL_DEL, elem->fd, NULL);
     shutdown(elem->fd, SHUT_RDWR);
     close(elem->fd);
+    free(elem->st_req);
     free(elem);
 }
 
@@ -193,6 +184,7 @@ int poll_event_process(poll_event_t * poll_event)
     }
     info("event count: %d", fds);
 	int i;
+    /*struct epoll_event ev;*/
     for(i=0;i<fds;i++)
     {
         poll_element_t * poll_element  = NULL;
@@ -214,10 +206,10 @@ int poll_event_process(poll_event_t * poll_event)
 					info("===> found EPOLLIN for event id(%d) and sock(%d)", i, events[i].data.fd);
 					poll_element->read_callback(poll_event, poll_element);
 
-                    struct epoll_event ev;
-                    ev.data.fd = events[i].data.fd;
-                    ev.events = EPOLLOUT;
-                    epoll_ctl(poll_event->epoll_fd, EPOLL_CTL_MOD, events[i].data.fd, &ev);
+                    //ev.data.fd = events[i].data.fd;
+                    //ev.events = EPOLLOUT;
+                    //epoll_ctl(poll_event->epoll_fd, EPOLL_CTL_MOD, events[i].data.fd, &ev);
+                    poll_event_element_set(poll_event, events[i].data.fd, EPOLLOUT, &poll_element);
 				}
 				// write
 				if((events[i].events & EPOLLOUT) && poll_element->write_callback)
@@ -225,6 +217,7 @@ int poll_event_process(poll_event_t * poll_event)
                     info("process WRITE for event id(%d), sock(%d) and event(%d)", i, events[i].data.fd, events[i].events);
 					info("===> found EPOLLOUT for event id(%d) and sock(%d)", i, events[i].data.fd);
 					poll_element->write_callback(poll_event, poll_element);
+                    poll_event_element_delete(poll_event, poll_element);
 				}
 				// shutdown or error
 				if((events[i].events & EPOLLRDHUP) || (events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP))
