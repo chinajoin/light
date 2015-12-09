@@ -398,7 +398,9 @@ size_t hash_table_get_elements(hash_table_t * table, hash_table_element_t *** el
 {
     size_t i = 0;
     size_t count = 0;
-    (*elements) = (hash_table_element_t **) calloc(table->key_count, sizeof(hash_table_element_t *));
+    LOG("resizing hash table 003, key_count: %d, sizeof: %d", table->key_count, sizeof(hash_table_element_t *));
+    (*elements) = (hash_table_element_t **) malloc(table->key_count * sizeof(hash_table_element_t *));
+    INFO("resizing hash table 004");
     if (!*elements) 
     {
         INFO("No Memory to allocate elements array");
@@ -464,7 +466,6 @@ int hash_table_resize(hash_table_t *table, size_t len)
     hash_table_element_t ** elements;
     size_t count;
     // FIXME traversing the elements twice, change it some time soon
-    INFO("resizing hash table 00-");
     count = hash_table_get_elements(table, &elements);
     INFO("resizing hash table 000");
     if (!count) 
