@@ -64,7 +64,7 @@ struct st_request {
 	char query[256];
 	char protocal[16];
 	char file[64];
-	char realpath[512];
+	char realpath[1024];
 	//char **reqdata;
 };
 

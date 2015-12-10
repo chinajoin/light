@@ -476,6 +476,7 @@ int ParseRequest( int client_sock, struct sockaddr_in client_addr, char *req, st
 			break;
 		}
 	}
+    /* 
 	char **req_data = (char **)malloc((line_total-data_num) * sizeof(char *));
 	l=0;
 	if(is_data == 0 && data_num != 0){
@@ -484,7 +485,7 @@ int ParseRequest( int client_sock, struct sockaddr_in client_addr, char *req, st
 			req_data[l] = (char *)malloc(tmp_len);
 			memcpy(req_data[l], buf[k], tmp_len);
 		}
-	}
+	} */
 
 	/* Make request data */	
 	// 保存当前目录名
@@ -506,7 +507,7 @@ int ParseRequest( int client_sock, struct sockaddr_in client_addr, char *req, st
 	memcpy(st->method, method_buf[0], sizeof(*method_buf[0]));
 	memcpy(st->pathinfo, pathinfo, sizeof(pathinfo));
 	memcpy(st->query, query, sizeof(query));
-	memcpy(st->protocal, cwd, sizeof(cwd));
+	memcpy(st->protocal, protocal, sizeof(protocal));
 	memcpy(st->file, file, sizeof(file));
 	memcpy(st->realpath, cwd, sizeof(cwd));
 	/*memcpy(*st_req->reqdata, *req_data, strlen(*req_data));*/
@@ -528,12 +529,13 @@ int ParseRequest( int client_sock, struct sockaddr_in client_addr, char *req, st
 				fprintf(stderr, "%s\n", buf[i]);
 			}
 		}
+        /* 
 		if(req_data != (char **)0){
 			fprintf(stderr, "[ Request data ]");
-			for(i=0; i<l; i++){
+			for(i=0; i<l-1; i++){
 				fprintf(stderr, "%s\n", req_data[i]);
 			}
-		}
+		} */
 	}
 
 	return 0;

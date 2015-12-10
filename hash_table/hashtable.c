@@ -148,7 +148,6 @@ int hash_table_add(hash_table_t * table, void * key, size_t key_len, void * valu
     {
         LOG("Adding a key-value pair to the hash table with hash:%d, in VALUEREF MODE", (int)hash);
         element->key = malloc(key_len);
-        element->value = malloc(value_len);
         if (element->key)
         {
             memcpy(element->key, key, key_len);
@@ -164,8 +163,6 @@ int hash_table_add(hash_table_t * table, void * key, size_t key_len, void * valu
     else if (table->mode == MODE_ALLREF)
     {
         LOG("Adding a key-value pair to the hash table with hash:%d, in ALLREF MODE", (int)hash);
-		element->key = malloc(key_len);
-        element->value = malloc(value_len);
         element->key = key;
         element->value = value;
     }
