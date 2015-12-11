@@ -45,6 +45,13 @@
 #define BUFFER_SIZE				8192
 #define REQUEST_MAX_SIZE		10240
 
+#define METHOD_SIZE				16
+#define PATHINFO_SIZE			512
+#define QUERY_SIZE				256
+#define PROTOCAL_SIZE			16
+#define FILENAME_SIZE			256
+#define REALPATH_SIZE			1024
+
 /* configure constant */
 #define IS_DEBUG				1					/* Is open debug mode */
 #define IS_DAEMON				0					/* Is daemon running */
@@ -59,13 +66,18 @@
 
 /* data struct define */
 struct st_request {
-	char method[16];
-	char pathinfo[256];
-	char query[256];
-	char protocal[16];
-	char file[64];
-	char realpath[1024];
-	//char **reqdata;
+	char *method;
+	char *pathinfo;
+	char *query;
+	char *protocal;
+	char *filename;
+	char *realpath;
 };
+
+// func declare
+
+struct st_request *alloc_st_request();
+
+void destory_st_request(struct st_request *);
 
 #endif

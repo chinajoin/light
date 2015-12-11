@@ -27,8 +27,6 @@ static char g_log_path[256]			= DEFAULT_LOG_PATH;
 /* Global variable */
 static int g_log_fd					= 0;
 
-// func declare
-
 void accept_cb(poll_event_t *);
 
 void read_cb (poll_event_t *, poll_element_t *);
@@ -36,6 +34,7 @@ void read_cb (poll_event_t *, poll_element_t *);
 void write_cb(poll_event_t *, poll_element_t *);
 
 void close_cb (poll_event_t *, poll_element_t *);
+
 
 /********************************
  *
@@ -431,10 +430,9 @@ int ProcRequest(poll_event_t * poll_event, int client_sock, poll_element_t * ele
  */
 int ParseRequest( int client_sock, struct sockaddr_in client_addr, char *req, struct st_request **st_req)
 {
-	char **buf, **method_buf, **query_buf, currtime[32]={0}, cwd[1024]={0}, pathinfo[512]={0}, file[256]={0}, log[1024]={0};
+	char **buf, **method_buf, **query_buf, currtime[32]={0}, cwd[REALPATH_SIZE]={0}, pathinfo[PATHINFO_SIZE]={0}, filename[FILENAME_SIZE]={0}, log[1024]={0};
 	int line_total, method_total, query_total, i;
 
-    struct st_request *st = (struct st_request *)malloc(sizeof(struct st_request));
 
 	// 存放请求的相关信息：method，path，head，etc
 	/* Split client request */
@@ -466,13 +464,9 @@ int ParseRequest( int client_sock, struct sockaddr_in client_addr, char *req, st
 	explode(method_buf[1], '?', &query_buf, &query_total);
 
 	// 获取数据实体
-	int j, k, l;
-	int data_num = 0;
-	int is_data = -1;
+	int j;
 	for(j=0; j<line_total; j++){
 		if(strlen(buf[j]) == 1){
-			data_num = j+1;
-			is_data = 0;
 			break;
 		}
 	}
@@ -493,7 +487,7 @@ int ParseRequest( int client_sock, struct sockaddr_in client_addr, char *req, st
 		fprintf(stderr, "can not copy the path");
 	}
 	strcpy(pathinfo, query_buf[0]);
-	substr(query_buf[0], strrpos(pathinfo, '/')+1, 0, file);
+	substr(query_buf[0], strrpos(pathinfo, '/')+1, 0, filename);
 	
 	// 绝对路径
 	strcat(cwd, pathinfo);
@@ -504,20 +498,26 @@ int ParseRequest( int client_sock, struct sockaddr_in client_addr, char *req, st
 	strcpy(protocal, strtolower(method_buf[2]));
 	strcpy(query, (query_total == 2 ? query_buf[1] : ""));
 
-	memcpy(st->method, method_buf[0], sizeof(*method_buf[0]));
-	memcpy(st->pathinfo, pathinfo, sizeof(pathinfo));
-	memcpy(st->query, query, sizeof(query));
-	memcpy(st->protocal, protocal, sizeof(protocal));
-	memcpy(st->file, file, sizeof(file));
-	memcpy(st->realpath, cwd, sizeof(cwd));
-	/*memcpy(*st_req->reqdata, *req_data, strlen(*req_data));*/
-    *st_req = st;
+	info("method=%d", sizeof(*method_buf[0]));
+	info("pathinfo=%d", sizeof(pathinfo));
+	info("query=%d", sizeof(query));
+	info("protocal=%d", sizeof(protocal));
+	info("filename=%d", sizeof(filename));
+	info("realpath=%d", sizeof(realpath));
+
+	memcpy((*st_req)->method, method_buf[0], sizeof(*method_buf[0]));
+	memcpy((*st_req)->pathinfo, pathinfo, sizeof(pathinfo));
+	memcpy((*st_req)->query, query, sizeof(query));
+	memcpy((*st_req)->protocal, protocal, sizeof(protocal));
+	memcpy((*st_req)->filename, filename, sizeof(filename));
+	memcpy((*st_req)->realpath, cwd, sizeof(cwd));
+	/*memcpy(*st_req->data, *req_data, strlen(*req_data));*/
 
 	/* Is a directory pad default index page */
 	if ( is_dir(cwd) ){
 		strcat(cwd, g_dir_index);
 		if ( file_exists(cwd) ){
-			memcpy(st->realpath, cwd, strlen(cwd));
+			memcpy((*st_req)->realpath, cwd, strlen(cwd));
 		}
 	}
 	
@@ -609,6 +609,40 @@ void close_cb (poll_event_t * poll_event, poll_element_t * elem)
     // close the socket, we are done with it
     /*poll_event_element_delete(poll_event, elem);*/
 }
+
+struct st_request *alloc_st_request()
+{
+    struct st_request *st_req = (struct st_request *)malloc(sizeof(struct st_request));
+    if(st_req == NULL)
+        return NULL;
+    st_req->method      = (char *)malloc(METHOD_SIZE);
+    st_req->pathinfo    = (char *)malloc(PATHINFO_SIZE);
+    st_req->query       = (char *)malloc(QUERY_SIZE);
+    st_req->protocal    = (char *)malloc(PROTOCAL_SIZE);
+    st_req->filename    = (char *)malloc(FILENAME_SIZE);
+    st_req->realpath    = (char *)malloc(REALPATH_SIZE);
+    /*st_req->data        = (char **)malloc(1024);*/
+    return st_req;
+}
+
+void destory_st_request(struct st_request *st_req)
+{
+    if(NULL == st_req) return;
+    if(st_req->method != NULL)
+        free(st_req->method);
+    if(st_req->pathinfo != NULL)
+        free(st_req->pathinfo);
+    if(st_req->query != NULL)
+        free(st_req->query);
+    if(st_req->protocal != NULL)
+        free(st_req->protocal);
+    if(st_req->filename != NULL)
+        free(st_req->filename);
+    if(st_req->realpath != NULL)
+        free(st_req->realpath);
+    free(st_req);
+}
+
 
 void accept_cb(poll_event_t * poll_event)
 {

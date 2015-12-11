@@ -96,7 +96,8 @@ void explode(char *from, char delim, char ***to, int *item_num){
 char *strtolower( char *s ){
 	int i, len = sizeof(s);
 	for( i = 0; i < len; i++ ){
-		s[i] = ( s[i] >= 'A' && s[i] <= 'Z' ? s[i] + 'a' - 'A' : s[i] );
+		/*s[i] = ( s[i] >= 'A' && s[i] <= 'Z' ? s[i] + 'a' - 'A' : s[i] );*/
+        s[i] = tolower(s[i]);
 	}
 	return(s);
 }
@@ -108,7 +109,8 @@ char *strtolower( char *s ){
 char *strtoupper( char *s ){
 	int i, len = sizeof(s);
 	for( i = 0; i < len; i++ ){
-		s[i] = ( s[i] >= 'a' && s[i] <= 'z' ? s[i] + 'A' - 'a' : s[i] );
+		/*s[i] = ( s[i] >= 'a' && s[i] <= 'z' ? s[i] + 'A' - 'a' : s[i] );*/
+        s[i] = toupper(s[i]);
 	}
 	return(s);
 }

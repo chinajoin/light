@@ -1,6 +1,7 @@
 #include "poll.h"
 #include "util.h"
 #include "log.h"
+#include "light.h"
 #include "hash_table/hashtable.h"
 #include <stdlib.h>
 #include <sys/epoll.h>
@@ -33,6 +34,7 @@ poll_element_t * poll_event_element_new(int fd, uint32_t events)
     {
         elem->fd = fd;
         elem->events = events;
+        elem->st_req = alloc_st_request();
     }
     return elem;
 }
@@ -92,7 +94,7 @@ void poll_event_element_delete(poll_event_t* poll_event, poll_element_t * elem)
     epoll_ctl(poll_event->epoll_fd, EPOLL_CTL_DEL, elem->fd, NULL);
     shutdown(elem->fd, SHUT_RDWR);
     close(elem->fd);
-    free(elem->st_req);
+    destory_st_request(elem->st_req);
     free(elem);
 }
 
