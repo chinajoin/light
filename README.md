@@ -17,10 +17,10 @@
 
 TODO:
 
-	* 使用epoll异步事件监听机制实现
-	* 修复了之前版本对内存使用的问题
-	* 还未支持POST
-	* 集成http-parser库
-	* 考虑对多进程（master-worker）的支持
+  * 使用epoll异步事件监听机制实现
+  * 修复了之前版本对内存使用的问题
+  * 还未支持POST
+  * 集成http-parser库
+  * 考虑对多进程（master-worker）的支持
 
-	Auther: melanc - whdsmile@gmail.com qq:869314629
+  * Auther: melanc - whdsmile@gmail.com qq:869314629
