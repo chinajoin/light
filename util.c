@@ -81,7 +81,7 @@ void explode(char *from, char delim, char ***to, int *item_num){
         for(j=0; from[i]!='\0' && from[i]!=delim; i++, j++)
             buf[j] = from[i];
         i++;
-        temp_len = strlen(buf)+1;
+        temp_len = sizeof(buf);
         ret[k] = malloc(temp_len);
         memcpy(ret[k], buf, temp_len);
     } 

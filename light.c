@@ -152,8 +152,8 @@ int SendHeaders(int client_sock, int status, char *title, char *extra_header, ch
     time_t now;
     char timebuf[100], buf[BUFFER_SIZE], buf_all[REQUEST_MAX_SIZE];
 	/* Make http head information */
-    memset(buf, 0, strlen(buf));
-    memset(buf_all, 0, strlen(buf_all));
+    memset(buf, 0, sizeof(buf));
+    memset(buf_all, 0, sizeof(buf_all));
 
     sprintf(buf, "%s %d %s\r\n", "HTTP/1.0", status, title);
     strcat(buf_all, buf);
@@ -493,8 +493,8 @@ int ParseRequest( int client_sock, struct sockaddr_in client_addr, char *req, st
 	strcat(cwd, pathinfo);
 
 	char protocal[16], query[256];
-	memset(protocal, 0, strlen(protocal));
-	memset(query, 0, strlen(query));
+	memset(protocal, 0, sizeof(protocal));
+	memset(query, 0, sizeof(query));
 	strcpy(protocal, strtolower(method_buf[2]));
 	strcpy(query, (query_total == 2 ? query_buf[1] : ""));
 
@@ -512,6 +512,15 @@ int ParseRequest( int client_sock, struct sockaddr_in client_addr, char *req, st
 	memcpy((*st_req)->filename, filename, sizeof(filename));
 	memcpy((*st_req)->realpath, cwd, sizeof(cwd));
 	/*memcpy(*st_req->data, *req_data, strlen(*req_data));*/
+    
+    // free buf
+    int buf_l = sizeof(buf)/sizeof(buf[0]);
+    int k;
+    for(k=0; k<buf_l; k++)
+    {
+        if(buf[k]!=NULL)
+            free(buf[k]);
+    }
 
 	/* Is a directory pad default index page */
 	if ( is_dir(cwd) ){
@@ -721,7 +730,7 @@ void InitServerListen( unsigned int port, unsigned int max_client )
 		int epoll_fd;
 	}; */
 
-    poll_event_t *pe = poll_event_new(-1);
+    poll_event_t *pe = poll_event_new(1000);
 	pe->listen_sock = listensock;
     pe->accept_callback = accept_cb;
 
