@@ -1,4 +1,5 @@
 *.o
 light
+tags
 hash_table/*.o
 htdocs/core*

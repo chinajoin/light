@@ -23,4 +23,5 @@ TODO:
   * 集成http-parser库
   * 考虑对多进程（master-worker）的支持
 
-  * Auther: melanc - whdsmile@gmail.com qq:869314629
+
+Auther: melanc - whdsmile@gmail.com qq:869314629
